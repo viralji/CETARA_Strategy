@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Hypothalamus — WWT Transformation Strategy</title>
+<style>
+  :root {
+    --bg: #FBFAF7;
+    --surface: #FFFFFF;
+    --ink: #2C2C2A;
+    --ink-2: #5F5E5A;
+    --ink-3: #888780;
+    --border: rgba(0,0,0,0.08);
+    --border-2: rgba(0,0,0,0.14);
+    /* pastels */
+    --blue-50:#E6F1FB; --blue-100:#D0E4F7; --blue-800:#0C447C;
+    --teal-50:#E1F5EE; --teal-100:#C9EBDD; --teal-800:#085041;
+    --coral-50:#FAECE7; --coral-100:#F7DDD3; --coral-800:#712B13;
+    --amber-50:#FAEEDA; --amber-100:#F8E4C2; --amber-800:#633806;
+    --purple-50:#EEEDFE; --purple-100:#DEDBFB; --purple-800:#3C3489;
+    --pink-50:#FBEAF0; --pink-100:#F6D7E2; --pink-800:#72243E;
+    --green-50:#EAF3DE; --green-100:#DAEBC4; --green-800:#27500A;
+    --gray-50:#F4F2EC; --gray-100:#E8E5DC; --gray-800:#444441;
+    --red-50:#FCEBEB; --red-100:#F8D7D7; --red-800:#791F1F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--ink);
+    font-size: 14px; line-height: 1.55;
+  }
+  .app { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+  header.hero {
+    padding: 18px 20px; background: linear-gradient(135deg, var(--blue-50), var(--purple-50));
+    border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);
+  }
+  header.hero h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; color: var(--ink); }
+  header.hero .sub { font-size: 12.5px; color: var(--ink-2); }
+  header.hero .pill { display: inline-block; background: rgba(255,255,255,0.7); padding: 2px 10px; border-radius: 999px; font-size: 11px; color: var(--purple-800); margin-left: 8px; font-weight: 500; }
+
+  /* tabs */
+  .tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 6px; border-radius: 10px; margin-bottom: 16px;
+    position: sticky; top: 8px; z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .tab-btn {
+    background: transparent; border: 0;
+    padding: 7px 11px; font-size: 12px; font-weight: 500;
+    border-radius: 7px; cursor: pointer; color: var(--ink-2);
+    font-family: inherit; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--gray-50); color: var(--ink); }
+  .tab-btn.active { background: var(--ink); color: #fff; }
+  .tab-btn .n { opacity: 0.6; margin-right: 5px; font-weight: 400; }
+
+  .panel { display: none; animation: fadeIn 0.25s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  }
+  .card.tinted-blue { background: var(--blue-50); border-color: var(--blue-100); }
+  .card.tinted-teal { background: var(--teal-50); border-color: var(--teal-100); }
+  .card.tinted-coral { background: var(--coral-50); border-color: var(--coral-100); }
+  .card.tinted-amber { background: var(--amber-50); border-color: var(--amber-100); }
+  .card.tinted-purple { background: var(--purple-50); border-color: var(--purple-100); }
+  .card.tinted-pink { background: var(--pink-50); border-color: var(--pink-100); }
+  .card.tinted-green { background: var(--green-50); border-color: var(--green-100); }
+  .card.tinted-gray { background: var(--gray-50); border-color: var(--gray-100); }
+
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 6px; color: var(--ink); }
+  h3 { font-size: 14.5px; font-weight: 600; margin: 0 0 6px; color: var(--ink); }
+  h4 { font-size: 12.5px; font-weight: 600; margin: 0 0 4px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin: 0 0 8px; }
+  ul { margin: 0 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 760px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* timeline */
+  .tl {
+    position: relative; padding-left: 24px;
+  }
+  .tl::before {
+    content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--border-2);
+  }
+  .tl-item { position: relative; margin-bottom: 12px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -22px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ink-3); border: 2px solid var(--surface);
+  }
+  .tl-item.growth::before { background: #1D9E75; }
+  .tl-item.decline::before { background: #E24B4A; }
+  .tl-item.context::before { background: #888780; }
+  .tl-date { font-weight: 600; font-size: 13px; }
+  .tl-date .tag { font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; font-weight: 500; vertical-align: middle; }
+  .tl-date .tag.g { background: var(--teal-50); color: var(--teal-800); }
+  .tl-date .tag.d { background: var(--red-50); color: var(--red-800); }
+  .tl-date .tag.c { background: var(--gray-50); color: var(--gray-800); }
+  .tl-desc { font-size: 12.5px; color: var(--ink-2); }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--gray-50); font-weight: 600; color: var(--ink); font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+
+  /* SWOT */
+  .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .swot > div { padding: 10px; border-radius: 8px; font-size: 12.5px; }
+  .s { background: var(--teal-50); }
+  .w { background: var(--coral-50); }
+  .o { background: var(--blue-50); }
+  .t { background: var(--amber-50); }
+  .swot h4 { margin-bottom: 6px; }
+  .swot ul { padding-left: 16px; margin: 0; }
+
+  /* phase pills */
+  .phase-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .phase {
+    padding: 12px; border-radius: 10px; text-align: center;
+  }
+  .phase.growth { background: var(--teal-50); border: 1px solid var(--teal-100); }
+  .phase.stable { background: var(--amber-50); border: 1px solid var(--amber-100); }
+  .phase.decline { background: var(--coral-50); border: 1px solid var(--coral-100); }
+  .phase .yrs { font-weight: 600; font-size: 15px; }
+  .phase .lbl { font-size: 11.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+  .phase .ev { font-size: 12px; margin-top: 6px; color: var(--ink-2); }
+
+  /* before/after columns */
+  .ba { display: grid; grid-template-columns: 1fr 50px 1fr; gap: 12px; align-items: stretch; }
+  .ba-col { padding: 16px; border-radius: 10px; }
+  .ba-from { background: var(--coral-50); border: 1px solid var(--coral-100); }
+  .ba-to { background: var(--teal-50); border: 1px solid var(--teal-100); }
+  .ba-arrow {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--ink-3);
+  }
+  .ba-col h4 { color: var(--ink-2); }
+  .ba-col ul { padding-left: 18px; font-size: 12.5px; }
+  @media (max-width: 760px) {
+    .ba { grid-template-columns: 1fr; }
+    .ba-arrow { transform: rotate(90deg); padding: 4px; }
+  }
+
+  /* project header */
+  .proj-head {
+    padding: 18px 20px; border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .proj-head .num { font-size: 11px; letter-spacing: 1px; opacity: 0.7; font-weight: 600; text-transform: uppercase; }
+  .proj-head h2 { font-size: 22px; margin: 2px 0 6px; }
+  .proj-head .theme { font-size: 13px; color: var(--ink-2); }
+
+  /* KPI tiles */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .kpi {
+    background: var(--gray-50); padding: 8px 10px; border-radius: 7px;
+    font-size: 11.5px; color: var(--ink-2);
+  }
+  .kpi strong { display: block; font-size: 13px; color: var(--ink); font-weight: 600; margin-bottom: 1px; }
+
+  /* values list */
+  .val-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .val { padding: 12px; border-radius: 9px; }
+  .val .num { font-size: 11px; color: var(--ink-3); font-weight: 600; }
+  .val h4 { color: var(--ink); margin: 2px 0 4px; text-transform: none; letter-spacing: 0; font-size: 13.5px; }
+  .val p { font-size: 12.5px; color: var(--ink-2); margin: 0; }
+
+  /* call-outs */
+  .quote {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic; font-size: 15px;
+    padding: 16px 20px; border-left: 3px solid var(--purple-800);
+    background: var(--purple-50); border-radius: 0 8px 8px 0;
+    color: var(--ink); margin: 10px 0;
+  }
+  .quote .by { display: block; margin-top: 6px; font-style: normal; font-size: 12px; color: var(--ink-2); font-family: inherit; }
+
+  .stat { font-size: 22px; font-weight: 600; color: var(--ink); }
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .stat-card { padding: 12px; border-radius: 9px; }
+  .stat-card .lbl { font-size: 11.5px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* fallback / success boxes */
+  .box-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 760px) { .box-pair { grid-template-columns: 1fr; } }
+
+  /* timeline strip for projects */
+  .ts-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .ts-cell {
+    padding: 10px; border-radius: 8px; background: var(--gray-50);
+    border-top: 3px solid var(--ink-3); font-size: 12px;
+  }
+  .ts-cell strong { display: block; font-size: 12.5px; margin-bottom: 4px; color: var(--ink); }
+  .ts-cell.t1 { border-top-color: #B5D4F4; }
+  .ts-cell.t2 { border-top-color: #9FE1CB; }
+  .ts-cell.t3 { border-top-color: #FAC775; }
+
+  /* closing */
+  .closing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .closing-grid { grid-template-columns: 1fr; } }
+
+  /* badge */
+  .badge { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 10px; font-weight: 500; letter-spacing: 0.3px; }
+  .b-blue { background: var(--blue-50); color: var(--blue-800); }
+  .b-teal { background: var(--teal-50); color: var(--teal-800); }
+  .b-coral { background: var(--coral-50); color: var(--coral-800); }
+  .b-amber { background: var(--amber-50); color: var(--amber-800); }
+  .b-purple { background: var(--purple-50); color: var(--purple-800); }
+  .b-pink { background: var(--pink-50); color: var(--pink-800); }
+  .b-green { background: var(--green-50); color: var(--green-800); }
+
+  .small { font-size: 12px; color: var(--ink-2); }
+  .muted { color: var(--ink-3); }
+  .underline-soft { background: linear-gradient(transparent 70%, var(--amber-100) 70%); padding: 0 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="hero">
+  <h1>Project Hypothalamus <span class="pill">WWT Transformation Strategy</span></h1>
+  <div class="sub">Reclaiming WWT's digital leadership through premium customer experience, technology, and selective competition · Prepared for: CEO &amp; Board · 2025</div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" data-tab="t1"><span class="n">01</span>Timeline &amp; Phases</button>
+  <button class="tab-btn" data-tab="t2"><span class="n">02</span>Position &amp; SWOT</button>
+  <button class="tab-btn" data-tab="t3"><span class="n">03</span>Vision · Mission · Values</button>
+  <button class="tab-btn" data-tab="t4"><span class="n">04</span>Manifestation</button>
+  <button class="tab-btn" data-tab="t5"><span class="n">05</span>WWT Stars Shine</button>
+  <button class="tab-btn" data-tab="t6"><span class="n">06</span>Jump 5 Steps</button>
+  <button class="tab-btn" data-tab="t7"><span class="n">07</span>Choose the Battle</button>
+  <button class="tab-btn" data-tab="t8"><span class="n">08</span>LightHouse WWT</button>
+  <button class="tab-btn" data-tab="t9"><span class="n">09</span>Orbit Growth</button>
+  <button class="tab-btn" data-tab="t10"><span class="n">10</span>Closing</button>
+</div>
+
+<!-- ========== TAB 1: TIMELINE ========== -->
+<section class="panel active" id="t1">
+  <div class="card">
+    <h2>Three phases of WWT's journey</h2>
+    <p class="small">A pioneer that built early advantage, hit hidden stress at peak, and now faces visible decline. The economy is the trigger; the root causes are structural.</p>
+    <div class="phase-row">
+      <div class="phase growth">
+        <div class="yrs">2009 — 2016</div>
+        <div class="lbl">Growth Phase</div>
+        <div class="ev">Pioneering firsts, $1B → $2.9B revenue, "Best Indian Telecom" award.</div>
+      </div>
+      <div class="phase stable">
+        <div class="yrs">2016 — 2018</div>
+        <div class="lbl">Hidden Stress (Plateau)</div>
+        <div class="ev">Revenue grows, EBIT down 58.85%, capex up 124.56%. Warning signs ignored.</div>
+      </div>
+      <div class="phase decline">
+        <div class="yrs">2019 — 2024</div>
+        <div class="lbl">Visible Decline</div>
+        <div class="ev">RMS drops 448 bps to 23.3%, poor NPS, rivals surge, digital disruption.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Detailed chronology</h3>
+    <div class="legend">
+      <span><span class="dot" style="background:#1D9E75"></span>Growth event</span>
+      <span><span class="dot" style="background:#E24B4A"></span>Decline / threat</span>
+      <span><span class="dot" style="background:#888780"></span>Industry / tech context</span>
+    </div>
+    <div class="tl">
+      <div class="tl-item growth"><div class="tl-date">2009 <span class="tag g">Founded</span></div><div class="tl-desc">WWT established. Built 32,900 route km of optic fiber. First private fixed-line provider in India.</div></div>
+      <div class="tl-item growth"><div class="tl-date">2010 <span class="tag g">First mover</span></div><div class="tl-desc">First to launch mobile services in New Delhi. "Systel Ind" brand becomes household name.</div></div>
+      <div class="tl-item context"><div class="tl-date">2012 <span class="tag c">Substitution threat</span></div><div class="tl-desc">Indane launches low-cost Wi-Fi at $4/month — early sign of access-technology substitution.</div></div>
+      <div class="tl-item growth"><div class="tl-date">Apr 2012 <span class="tag g">International</span></div><div class="tl-desc">International long-distance license. First private telecom to own undersea cable (Chennai → Singapore, 3,200 km).</div></div>
+      <div class="tl-item growth"><div class="tl-date">2014 <span class="tag g">$1B milestone</span></div><div class="tl-desc">Revenue crosses USD 1 billion. All services consolidated under "Systel Ind" brand.</div></div>
+      <div class="tl-item growth"><div class="tl-date">2015 <span class="tag g">Savvy invests</span></div><div class="tl-desc">Savvy (world's largest mobile operator) acquires 10% stake for ~$1.5B. Total revenue $2,093.75M. Fixed-line subs: 857,262.</div></div>
+      <div class="tl-item growth"><div class="tl-date">Feb 2016 <span class="tag g">Integration</span></div><div class="tl-desc">Integrated organizational structure. DSL bundles. "Triple play" plans (voice + broadband + video-on-demand). IPTV trials.</div></div>
+      <div class="tl-item decline"><div class="tl-date">Mar 2016 <span class="tag d">Hidden stress</span></div><div class="tl-desc">Total revenue $2,926.87M (+39.8%). But B&amp;T EBIT falls −58.85% to $13.67M; capex up +124.56% to $226M. Profitable growth breaks.</div></div>
+      <div class="tl-item growth"><div class="tl-date">Jun 2016 <span class="tag g">Recognition</span></div><div class="tl-desc">Awarded "Best Indian Telecom". 1.35M fixed subscribers, but still only 2.6% market share (SNL holds 72.7%).</div></div>
+      <div class="tl-item context"><div class="tl-date">2017 — 2018 <span class="tag c">Data gap</span></div><div class="tl-desc">Case provides no detail. Interpret as: early stress compounded silently until visible in 2019.</div></div>
+      <div class="tl-item decline"><div class="tl-date">2019 (Apr–Jun Q) <span class="tag d">RMS collapse</span></div><div class="tl-desc">Global economic crisis. WWT RMS drops 448 bps → 23.3%. Urban circles hit hardest; 2G revenue collapses.</div></div>
+      <div class="tl-item decline"><div class="tl-date">2019 <span class="tag d">Rivals surge</span></div><div class="tl-desc">Savvy RMS +702 bps → 41.8% (tariff hikes, SE strength, AI chatbot GOPI lifts CSAT 68%). Indane RMS +391 bps → 34.8%. TelZip offers free broadband to poach business customers.</div></div>
+      <div class="tl-item decline"><div class="tl-date">2019 <span class="tag d">NPS crisis</span></div><div class="tl-desc">South-East NPS "Poor/OK". 32% low-NPS plan to switch (vs 14% high-NPS). Switch reasons: 48% service quality, 23% personalized experience.</div></div>
+      <div class="tl-item context"><div class="tl-date">2025 <span class="tag c">Decision point</span></div><div class="tl-desc">CEO Sanjay Rathore reflects on an old July 2020 BusinessWeek issue — a reminder of WWT's earlier promise. Five years on, the gap to rivals has widened. Status quo will not survive.</div></div>
+      <div class="tl-item context"><div class="tl-date">2022 → 2025 <span class="tag c">Horizon</span></div><div class="tl-desc">Telecom market $3.45T (CAGR 6.4%). IoT &gt;$600B. EU 5G ubiquity by 2025. 5G, SDN/NFV, AI/ML, OTT reshape the game.</div></div>
+    </div>
+  </div>
+
+  <div class="card tinted-purple">
+    <h3>The big insight from this timeline</h3>
+    <p>The 2019 crisis was the <strong>trigger</strong>, not the <strong>cause</strong>. Savvy and Indane <em>gained share</em> in the same downturn. WWT's real problem was structural — capex without payback, weak NPS, and lagging digital readiness — which had been building quietly since 2016.</p>
+    <p class="small" style="margin-bottom:0"><strong>Key point:</strong> "WWT cannot blame the economy. Rivals thrived in the same conditions. The decline is self-inflicted, which means it is also self-correctable."</p>
+  </div>
+</section>
+
+<!-- ========== TAB 2: POSITION + SWOT ========== -->
+<section class="panel" id="t2">
+  <div class="card">
+    <h2>Where WWT stands today</h2>
+    <div class="stat-row">
+      <div class="stat-card tinted-blue"><div class="stat">2.6%</div><div class="lbl">Fixed-line market share</div></div>
+      <div class="stat-card tinted-coral"><div class="stat">23.3%</div><div class="lbl">Revenue Market Share (−448 bps)</div></div>
+      <div class="stat-card tinted-coral"><div class="stat">−58.9%</div><div class="lbl">B&amp;T EBIT YoY (2016)</div></div>
+      <div class="stat-card tinted-amber"><div class="stat">Poor / OK</div><div class="lbl">NPS in South-East</div></div>
+      <div class="stat-card tinted-teal"><div class="stat">63%</div><div class="lbl">Mobile share of revenue</div></div>
+      <div class="stat-card tinted-purple"><div class="stat">$17B</div><div class="lbl">Market capitalization</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Competitive landscape — who attacks WWT, and how</h3>
+    <table>
+      <thead>
+        <tr><th>Player</th><th>Strength</th><th>Attack vector</th><th>WWT counter-posture</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>SNL Telecom</strong><br><span class="badge b-coral">Govt · 72.7% share</span></td><td>Scale, cash reserves, national reach</td><td>Aggressive price war (2 Mbps at 256 Kbps price); below-cost broadband</td><td>Avoid national price war. Defend premium clusters on service.</td></tr>
+        <tr><td><strong>Savvy</strong><br><span class="badge b-purple">Investor + Rival</span></td><td>Largest global mobile op; AI; South-East strength; RMS 41.8%</td><td>Customer experience (GOPI chatbot +68% CSAT), tariff discipline</td><td>Learn from, but protect strategic information. Governance risk.</td></tr>
+        <tr><td><strong>Indane</strong><br><span class="badge b-amber">Partial Govt · 34.8%</span></td><td>Wi-Fi access tech, NLD revenue, market execution</td><td>Substitution via Wi-Fi + adjacent service monetization</td><td>Build access-agnostic strategy. Enterprise + carrier bundles.</td></tr>
+        <tr><td><strong>TelZip</strong><br><span class="badge b-pink">Private · 120% growth</span></td><td>Aggressive acquisition, long-term contracts</td><td>Free broadband to poach business customers</td><td>Defend with SLAs and reliability — never copy "free" blindly.</td></tr>
+        <tr><td><strong>Digital-only ops</strong><br><span class="badge b-blue">Disruptors</span></td><td>App-first model, personalization, low cost</td><td>Reset customer expectations on experience</td><td>Combine digital convenience with physical reliability.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>WWT — Strategic SWOT</h3>
+    <div class="swot">
+      <div class="s">
+        <h4 style="color:var(--teal-800)">Strengths</h4>
+        <ul>
+          <li>Pioneer DNA — string of "firsts" (fixed-line, undersea cable, NLD/ILD)</li>
+          <li>32,900 km fiber backbone + undersea cable to Singapore</li>
+          <li>Strong "Systel Ind" brand recall</li>
+          <li>Mobile cash cow (63% of revenue, +46.75% growth)</li>
+          <li>$17B market cap; Savvy-backed credibility</li>
+          <li>Diversified portfolio: Mobile + B&amp;T + Enterprise</li>
+        </ul>
+      </div>
+      <div class="w">
+        <h4 style="color:var(--coral-800)">Weaknesses</h4>
+        <ul>
+          <li>Capex-heavy with weakening payback (+124% capex / −58% EBIT in B&amp;T)</li>
+          <li>Poor NPS, especially in South-East</li>
+          <li>Lagging in AI, digital channels, self-service</li>
+          <li>Only 2.6% fixed-line share — subscale</li>
+          <li>High-ARPU segment saturated</li>
+          <li>Outsourcing without strong governance creating CX leakage</li>
+        </ul>
+      </div>
+      <div class="o">
+        <h4 style="color:var(--blue-800)">Opportunities</h4>
+        <ul>
+          <li>5G fixed wireless access (capex-light reach)</li>
+          <li>IoT (&gt;$600B by 2022) for enterprises</li>
+          <li>AI-led service (Savvy proved 68% CSAT lift is possible)</li>
+          <li>Triple-play bundles for premium homes</li>
+          <li>Enterprise managed services + SDN/NFV</li>
+          <li>DLT-enabled payments / fintech adjacencies</li>
+          <li>Smartphone-led India: 2nd largest market</li>
+        </ul>
+      </div>
+      <div class="t">
+        <h4 style="color:var(--amber-800)">Threats</h4>
+        <ul>
+          <li>Government-led price wars (SNL below-cost broadband)</li>
+          <li>OTT players eroding voice / messaging revenue</li>
+          <li>Wi-Fi / wireless substitution of fixed-line</li>
+          <li>Savvy's dual role (investor + rival) — info leak risk</li>
+          <li>Customer expectations resetting via digital-only operators</li>
+          <li>Returns on equity already below cost of capital</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tinted-amber">
+    <h3>Inference — what this picture tells us</h3>
+    <ul>
+      <li><strong>The problem is not demand — it is profitability and competitiveness.</strong> WWT spends more to grow but earns less.</li>
+      <li><strong>It is a multi-front war, not a single-rival fight.</strong> Each competitor attacks a different dimension (price, tech, experience, acquisition).</li>
+      <li><strong>WWT's historical strength was agility.</strong> It lost ground because competitors became more agile. Strategy = restore agility.</li>
+      <li><strong>Savvy is the trickiest piece.</strong> 10% stake + competing → governance and information protection is a real risk, not paranoia.</li>
+      <li><strong>The path forward is not "cheaper". It is "smarter, more premium, more digital".</strong></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== TAB 3: VISION · MISSION · VALUES ========== -->
+<section class="panel" id="t3">
+  <div class="card tinted-purple">
+    <h4>Vision</h4>
+    <h2 style="font-size:18px;line-height:1.45">To become a global leader in premium digital connectivity, and the number one telecom brand in India for customer experience, trust, and future-ready technology.</h2>
+  </div>
+
+  <div class="card tinted-blue">
+    <h4>Mission</h4>
+    <p style="font-size:14.5px;margin-bottom:0">To help premium households, enterprises, professionals, and future-ready communities stay connected across generations — through reliable broadband, mobile, digital, IoT, and intelligent technology services, delivered with exceptional service, innovation, and trust.</p>
+  </div>
+
+  <div class="card tinted-teal">
+    <h4>Strategic positioning</h4>
+    <p style="font-size:14px;margin-bottom:0"><strong>WWT will not compete as a cheap, low-margin provider.</strong> WWT will compete as a <span class="underline-soft">premium and ultra-premium digital technology company</span> — for customers who value reliability, speed, service quality, security, personalization, and integrated digital solutions.</p>
+  </div>
+
+  <div class="card">
+    <h3>Six core values</h3>
+    <div class="val-grid">
+      <div class="val tinted-blue">
+        <div class="num">01</div><h4>Customer obsession</h4>
+        <p>We do not lose customers through neglect. Every relationship is a long-term trust asset.</p>
+      </div>
+      <div class="val tinted-teal">
+        <div class="num">02</div><h4>Technology leadership</h4>
+        <p>WWT was built by being first. We reclaim that position in 5G, IoT, AI, and future connectivity.</p>
+      </div>
+      <div class="val tinted-purple">
+        <div class="num">03</div><h4>Premium experience</h4>
+        <p>We do not win by being the cheapest. We win by being the most reliable, responsive, and valuable.</p>
+      </div>
+      <div class="val tinted-amber">
+        <div class="num">04</div><h4>Agility with discipline</h4>
+        <p>Move fast — but never waste capital. Every investment must improve CX, position, or future capability.</p>
+      </div>
+      <div class="val tinted-pink">
+        <div class="num">05</div><h4>Trust &amp; confidentiality</h4>
+        <p>We protect customer data, strategic information, and company assets. Information leakage is a business risk.</p>
+      </div>
+      <div class="val tinted-green">
+        <div class="num">06</div><h4>Partner-led growth</h4>
+        <p>Partnerships, alliances, outsourcing, M&amp;A — used intelligently. But WWT always owns the customer experience.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Alignment — how vision, mission, values, and strategy connect</h3>
+    <table>
+      <thead><tr><th>Layer</th><th>What it says</th><th>What it commits us to</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Vision</strong></td><td>Be #1 in premium digital connectivity</td><td>Long horizon · premium · digital · trust</td></tr>
+        <tr><td><strong>Mission</strong></td><td>Connect premium families, enterprises, communities across generations</td><td>Specific customer segments · multi-product · service-led</td></tr>
+        <tr><td><strong>Positioning</strong></td><td>Premium &amp; ultra-premium digital technology company</td><td>Refuse price-war battles · win on experience</td></tr>
+        <tr><td><strong>Values</strong></td><td>Customer obsession, tech leadership, premium experience, disciplined agility, trust, partner growth</td><td>Daily decision filters at every level</td></tr>
+        <tr><td><strong>Strategy</strong></td><td>5 parallel projects (Hypothalamus)</td><td>Operationalize vision · 90-day launch · weekly cadence</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== TAB 4: MANIFESTATION ========== -->
+<section class="panel" id="t4">
+  <div class="card">
+    <h2>From legacy telecom to premium digital technology leader</h2>
+    <p class="small">Where WWT has been, and where it must go. This is not just a strategy shift — it is a worldview shift.</p>
+  </div>
+
+  <div class="ba">
+    <div class="ba-col ba-from">
+      <h4>History — Who we were (2009–2018)</h4>
+      <ul>
+        <li>Fixed-line and copper-cable thinking</li>
+        <li>Product-led: sell connections, plans, lines</li>
+        <li>Call-center reactive support</li>
+        <li>Capex-heavy blanket expansion</li>
+        <li>Defensive competition (match every offer)</li>
+        <li>Organic-only growth</li>
+        <li>Scattered projects, siloed BUs</li>
+        <li>Brand built on "firsts" — but resting on past glory</li>
+      </ul>
+    </div>
+    <div class="ba-arrow">→</div>
+    <div class="ba-col ba-to">
+      <h4>Manifestation — Who we will become (2025+)</h4>
+      <ul>
+        <li>Access-agnostic connectivity (fiber + 5G FWA + Wi-Fi)</li>
+        <li>Relationship-led: own the customer for life</li>
+        <li>AI-led proactive service (predict, prevent, personalize)</li>
+        <li>Smart capital — capex where payback is clear</li>
+        <li>Selective battlefield strategy (pick where to fight)</li>
+        <li>Partnerships + M&amp;A + ecosystem plays</li>
+        <li>One unified transformation agenda</li>
+        <li>Brand built on premium digital trust — earning today</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card tinted-amber" style="margin-top:14px">
+    <h3>Why now? The motivation</h3>
+    <p>WWT has three forces converging that make this <strong>the right moment</strong>, not a hopeful one:</p>
+    <ol>
+      <li><strong>The pain is undeniable.</strong> RMS down 448 bps, EBIT down 58.9%, NPS poor — leadership has the burning platform to act.</li>
+      <li><strong>The market is still growing.</strong> Telecom heading to $3.45T by 2022 at 6.4% CAGR. IoT &gt; $600B. The pie is expanding — we just need to claim our slice differently.</li>
+      <li><strong>The window will close.</strong> Savvy is already ahead on AI. TelZip is locking customers into long-term contracts. Every quarter we wait, recovery gets more expensive.</li>
+    </ol>
+    <div class="quote" style="background:#fff;border-left-color:var(--amber-800);margin-bottom:0">
+      WWT became successful because it was agile and innovative. It is losing because competitors became more agile than WWT. The strategy is not reinvention — it is restoration of market agility.
+    </div>
+  </div>
+
+  <div class="card tinted-purple" style="margin-top:14px">
+    <h3>The promise we make to ourselves</h3>
+    <p style="margin-bottom:6px;font-size:14px"><strong>We will not be the cheapest. We will be the most trusted.</strong></p>
+    <p style="margin-bottom:0" class="small">We will not chase every customer. We will defend every customer worth keeping. We will not invest everywhere. We will invest where it compounds. We will not depend on any single partner — including the one that owns 10% of us. We will be lighter, sharper, and harder to attack 12 months from now.</p>
+  </div>
+</section>
+
+<!-- ========== TAB 5: PROJECT 1 — WWT STARS SHINE ========== -->
+<section class="panel" id="t5">
+  <div class="proj-head tinted-pink">
+    <div class="num">Project 1 of 5 · Hypothalamus</div>
+    <h2>WWT Stars Shine</h2>
+    <div class="theme"><strong>Theme:</strong> Customer retention · Premium experience · Emotional connection · Service excellence</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Core idea</h4>
+      <p>Stop losing valuable customers to neglect. Turn premium and ultra-premium customers into <strong>brand advocates</strong>, not just retained accounts.</p>
+    </div>
+    <div class="card">
+      <h4>Strategic objective</h4>
+      <p>Become the <strong>#1 telecom for customer experience</strong> among premium and ultra-premium customers in India.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Why this matters (the case evidence)</h4>
+    <p>The case data is unambiguous: <strong>48% of switchers cite "better service quality"</strong> and <strong>23% cite "personalized experience"</strong> as the reason they leave. NPS in the South-East is "Poor/OK" — and 32% of low-NPS customers plan to switch within a year (vs only 14% of high-NPS). Customer experience is not soft. It is direct revenue protection.</p>
+  </div>
+
+  <div class="card">
+    <h4>Key initiatives</h4>
+    <ol>
+      <li><strong>Zero valuable-customer loss program</strong> — a war room for premium / ultra-premium / SME / enterprise. Every at-risk customer has an owner.</li>
+      <li><strong>Premium customer command center</strong> — real-time dashboard: churn risk, complaint aging, NPS, outages, install delays, repeat complaints, competitor offers, escalations.</li>
+      <li><strong>AI-led service recovery</strong> — predict churn, fault, dispute resolution; trigger retention offers proactively.</li>
+      <li><strong>White-glove service layer</strong> — priority install &amp; repair, dedicated lines, outage alerts, home network checks, premium router upgrades, annual relationship review.</li>
+      <li><strong>Emotional brand campaign — "Connected Across Generations"</strong> — landline + broadband as the trusted backbone of Indian families across decades.</li>
+      <li><strong>Landline-to-digital transition</strong> — landline + broadband + Wi-Fi + IPTV/OTT + digital payments + elderly support + home IoT/security.</li>
+    </ol>
+  </div>
+
+  <div class="card tinted-amber">
+    <h4>Out-of-the-box ideas</h4>
+    <div class="grid-2">
+      <ul>
+        <li><strong>WWT Family Legacy Plan</strong> — reward multi-year families</li>
+        <li><strong>Grandparents Digital Care Pack</strong> — broadband + video calling + fraud-safe payments + priority support</li>
+        <li><strong>Never Offline Promise</strong> — backup connectivity or service credits for premium</li>
+      </ul>
+      <ul>
+        <li><strong>Customer Apology Protocol</strong> — senior leader calls after repeated failures</li>
+        <li><strong>One Engineer, One Relationship</strong> — field engineers assigned to premium neighborhoods</li>
+        <li><strong>"My WWT" companion app</strong> — outage map, billing, plan tweaks, repair status</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Timeline</h4>
+    <div class="ts-strip">
+      <div class="ts-cell t1"><strong>Days 0–30 · Align</strong>Identify top churn-risk premium customers. Stand up command center MVP. Map South-East as priority market 1.</div>
+      <div class="ts-cell t2"><strong>Days 31–60 · Pilot</strong>Launch Stars Shine in South-East. AI chatbot pilot. First retention squad operational. White-glove pilot in 3 cities.</div>
+      <div class="ts-cell t3"><strong>Days 61–90 · Scale</strong>Scale retention plays. Launch "Connected Across Generations" campaign. Family Legacy Plan rollout.</div>
+    </div>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Success factors</h4>
+      <ul>
+        <li>CEO-level visibility on top 100 customer issues, weekly</li>
+        <li>NPS as a board-reported metric, quarterly</li>
+        <li>Field empowerment to resolve at first contact</li>
+        <li>Partner SLAs tied to CX outcomes, not transaction counts</li>
+        <li>Sales + service + technical teams sharing one customer record</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Fallback plan (if NPS gains are slow)</h4>
+      <ul>
+        <li>Targeted win-back offers for churned high-ARPU customers</li>
+        <li>Selective tariff matching only in defended cities</li>
+        <li>Bring partial customer service back in-house for top 5% accounts</li>
+        <li>Acquire a regional CX-strong broadband ISP for talent + base</li>
+        <li>Increase service credits / SLA-backed contracts as confidence proof</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>KPIs</h4>
+    <div class="kpi-row">
+      <div class="kpi"><strong>NPS</strong>+15 pts in 12 mo</div>
+      <div class="kpi"><strong>Premium churn</strong>−40% in 12 mo</div>
+      <div class="kpi"><strong>Complaint TAT</strong>&lt; 24 hrs avg</div>
+      <div class="kpi"><strong>Repeat complaints</strong>−50%</div>
+      <div class="kpi"><strong>First-time-right install</strong>&gt; 90%</div>
+      <div class="kpi"><strong>Bundled plan share</strong>50% of premium</div>
+      <div class="kpi"><strong>Revenue protected</strong>$ retained value</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TAB 6: PROJECT 2 — JUMP 5 STEPS ========== -->
+<section class="panel" id="t6">
+  <div class="proj-head tinted-teal">
+    <div class="num">Project 2 of 5 · Hypothalamus</div>
+    <h2>Jump 5 Steps</h2>
+    <div class="theme"><strong>Theme:</strong> Technology leadership · 5G · IoT · AI · Future readiness</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Core idea</h4>
+      <p>WWT cannot catch up by walking — it must <strong>leapfrog</strong> in carefully chosen technology areas. Don't invest everywhere; jump where leadership is reclaimable.</p>
+    </div>
+    <div class="card">
+      <h4>Strategic objective</h4>
+      <p>Restore WWT's "first mover" identity by leading in <strong>5G-enabled, IoT-enabled, AI-powered</strong> digital connectivity for premium &amp; enterprise India.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Key initiatives</h4>
+    <ol>
+      <li><strong>Technology battlefield selection</strong> — focus only where leadership is reclaimable: 5G FWA, IoT for enterprise, AI customer service, predictive network maintenance, premium home broadband, SME digital services, managed connectivity, SDN/NFV.</li>
+      <li><strong>5G premium pilot zones</strong> — high-value micro-markets: residential clusters, business districts, tech parks, hospitals, educational hubs.</li>
+      <li><strong>IoT enterprise verticals</strong> — logistics, smart buildings, energy, industrial, healthcare, education campus, smart retail.</li>
+      <li><strong>AI-first operations</strong> — chatbot support, fault &amp; churn prediction, network optimization, technician routing, billing dispute resolution.</li>
+      <li><strong>Capex rationalization</strong> — rank every market on ARPU, churn risk, competitor intensity, payback. Investment principle: <em>"Fiber where density pays, fixed wireless where speed matters, partnerships where capital is expensive, digital where service can scale."</em></li>
+    </ol>
+  </div>
+
+  <div class="card tinted-amber">
+    <h4>Out-of-the-box ideas</h4>
+    <div class="grid-2">
+      <ul>
+        <li><strong>WWT Future Labs</strong> — internal venture team testing 5G, IoT, AI pilots</li>
+        <li><strong>First Again Challenge</strong> — internal contest to reclaim "first in India" status</li>
+        <li><strong>Smart Premium Homes</strong> — broadband + IoT security + OTT + cloud backup bundle</li>
+      </ul>
+      <ul>
+        <li><strong>5G-in-a-Box for SMEs</strong> — plug-and-play SME connectivity</li>
+        <li><strong>Network Twin</strong> — digital simulation of network assets to predict failures and capex needs</li>
+        <li><strong>Open RAN partnership</strong> — vendor-neutral cost reduction</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Timeline</h4>
+    <div class="ts-strip">
+      <div class="ts-cell t1"><strong>Days 0–30 · Align</strong>Freeze non-critical capex. Rank all markets on payback. Stand up Future Labs (3-person seed team).</div>
+      <div class="ts-cell t2"><strong>Days 31–60 · Pilot</strong>Select 3 cities for 5G FWA pilot. Launch AI chatbot pilot (build on Stars Shine MVP). Network Twin proof of concept.</div>
+      <div class="ts-cell t3"><strong>Days 61–90 · Scale</strong>Lock 12-month tech roadmap + capex envelope. Sign first IoT enterprise contract. Publish "First Again" internal mandate.</div>
+    </div>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Success factors</h4>
+      <ul>
+        <li>CTO-led with clear authority to kill underperforming pilots</li>
+        <li>Capex committee chaired by CEO — every project has payback gate</li>
+        <li>Pilot-to-scale framework: 90-day proof, 180-day scale decision</li>
+        <li>Talent: hire 5–7 senior digital / AI / cloud leaders</li>
+        <li>Vendor diversification — avoid single-vendor 5G lock-in</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Fallback plan (if 5G/IoT slips)</h4>
+      <ul>
+        <li>Tower &amp; fiber sharing partnerships to reduce capex burden</li>
+        <li>Acquire a small AI customer-service startup to skip build-time</li>
+        <li>License Savvy-style AI (carefully — info protection in contract)</li>
+        <li>Pivot to fixed wireless on existing 4G spectrum until 5G economics work</li>
+        <li>Outsource non-core network ops via managed-service contracts</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>KPIs</h4>
+    <div class="kpi-row">
+      <div class="kpi"><strong>Pilots launched</strong>12 in year 1</div>
+      <div class="kpi"><strong>Pilot-to-scale rate</strong>&gt; 40%</div>
+      <div class="kpi"><strong>Capex payback</strong>&lt; 36 mo</div>
+      <div class="kpi"><strong>Fault reduction</strong>−30%</div>
+      <div class="kpi"><strong>AI support CSAT</strong>&gt; 75%</div>
+      <div class="kpi"><strong>IoT enterprise rev</strong>$ tracked</div>
+      <div class="kpi"><strong>Digital adoption</strong>50% on app</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TAB 7: PROJECT 3 — CHOOSE THE BATTLE ========== -->
+<section class="panel" id="t7">
+  <div class="proj-head tinted-blue">
+    <div class="num">Project 3 of 5 · Hypothalamus</div>
+    <h2>Choose the Battle</h2>
+    <div class="theme"><strong>Theme:</strong> Competitor SWOT · Battlefield selection · Strategic positioning</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Core idea</h4>
+      <p>Don't fight every competitor everywhere. Decide explicitly where to <strong>compete, defend, partner, deprioritize, or exit</strong>.</p>
+    </div>
+    <div class="card">
+      <h4>Strategic objective</h4>
+      <p>Build a clear, competitor-specific playbook — aligned to premium positioning, not reactive matching.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Competitor-by-competitor playbook</h4>
+    <table>
+      <thead><tr><th>Rival</th><th>WWT response</th><th>Posture</th></tr></thead>
+      <tbody>
+        <tr><td><strong>SNL Telecom</strong></td><td>Compete in premium clusters. Use service reliability as differentiator. Bundle broadband + mobile + OTT + home. Selectively match price only in strategic markets.</td><td><span class="badge b-coral">Avoid national price war · Defend premium</span></td></tr>
+        <tr><td><strong>TelZip</strong></td><td>Protect high-value business customers. SLA-backed enterprise contracts. Targeted retention. Contract-renewal squads.</td><td><span class="badge b-pink">Defend enterprise · Never copy "free"</span></td></tr>
+        <tr><td><strong>Indane</strong></td><td>Build own Wi-Fi / FWA strategy. SME and institutional bundles. Use undersea cable + enterprise/carrier assets.</td><td><span class="badge b-amber">Tech bundles + enterprise plays</span></td></tr>
+        <tr><td><strong>Savvy</strong></td><td>Benchmark AI &amp; CX. <strong>Protect confidential strategy.</strong> Review shareholder info rights. Restrict sensitive flow. Maintain independent capability.</td><td><span class="badge b-purple">Learn from · Protect autonomy</span></td></tr>
+        <tr><td><strong>Digital-only ops</strong></td><td>App-first service. Digital onboarding. Instant plan changes. AI support. Personalized offers. Digital loyalty.</td><td><span class="badge b-blue">Digital convenience + physical reliability</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Where WWT WILL fight</h4>
+      <ul>
+        <li>Premium &amp; ultra-premium households</li>
+        <li>SMEs and enterprise accounts</li>
+        <li>High-density urban clusters</li>
+        <li>South-East priority markets (recovery zone)</li>
+        <li>Tech parks &amp; business districts</li>
+        <li>Digital-first but service-sensitive customers</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Where WWT will NOT fight</h4>
+      <ul>
+        <li>Pure low-end price wars</li>
+        <li>Low-ARPU geographies with poor payback</li>
+        <li>"Free broadband" without contract economics</li>
+        <li>Commodity-only landline service</li>
+        <li>Capex-heavy expansion without customer density</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Timeline</h4>
+    <div class="ts-strip">
+      <div class="ts-cell t1"><strong>Days 0–30 · Align</strong>Top 20 defend-markets identified. Competitor war room dashboard live. Savvy governance review.</div>
+      <div class="ts-cell t2"><strong>Days 31–60 · Pilot</strong>Competitor response playbooks for each rival. First defense moves in South-East cities.</div>
+      <div class="ts-cell t3"><strong>Days 61–90 · Scale</strong>Roll out playbooks nationally. Win/loss tracking system live. First strategic exits from unprofitable circles announced.</div>
+    </div>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Success factors</h4>
+      <ul>
+        <li>CSO / CCO-led with explicit "don't fight here" authority</li>
+        <li>Weekly competitive intelligence rhythm</li>
+        <li>Tiered pricing books — never one national rate card</li>
+        <li>Board-approved Savvy information protocol</li>
+        <li>Sales incentives realigned to premium share, not volume</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Fallback plan</h4>
+      <ul>
+        <li>If SNL price war intensifies — accelerate exit from low-ARPU circles</li>
+        <li>If TelZip wins multiple key enterprise accounts — counter-offer with multi-year managed services bundle</li>
+        <li>If Savvy escalates governance friction — explore buyback of 10% stake or restrict board info</li>
+        <li>If digital-only ops gain &gt; 5% share — partner with one (joint venture) rather than fight all</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>KPIs</h4>
+    <div class="kpi-row">
+      <div class="kpi"><strong>Premium share</strong>+200 bps</div>
+      <div class="kpi"><strong>Win/loss ratio</strong>per rival</div>
+      <div class="kpi"><strong>Premium ARPU</strong>+10%</div>
+      <div class="kpi"><strong>Enterprise retention</strong>&gt; 95%</div>
+      <div class="kpi"><strong>Profit by segment</strong>tracked</div>
+      <div class="kpi"><strong>Competitor offer response</strong>&lt; 48 hrs</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TAB 8: PROJECT 4 — LIGHTHOUSE WWT ========== -->
+<section class="panel" id="t8">
+  <div class="proj-head tinted-amber">
+    <div class="num">Project 4 of 5 · Hypothalamus</div>
+    <h2>LightHouse WWT</h2>
+    <div class="theme"><strong>Theme:</strong> Internal alignment · Partners · People · Technology · Governance · Culture</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Core idea</h4>
+      <p>WWT cannot deliver premium CX if its <strong>internal organization is slow, siloed, leaky, or misaligned</strong>. Remove past baggage. Make the company lighter, faster, more accountable.</p>
+    </div>
+    <div class="card">
+      <h4>Strategic objective</h4>
+      <p>Rebuild WWT internally so people, partners, processes, technology, and governance are aligned to <strong>premium digital leadership</strong>.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Key initiatives</h4>
+    <ol>
+      <li><strong>One-company operating model</strong> — break silos: mobile, broadband, enterprise, network, customer service, digital, field, sales. Shared targets for CX and profitable growth.</li>
+      <li><strong>Partner governance reset</strong> — outsource <em>tasks</em>, not <em>accountability</em>. Partner scorecards, SLA contracts, CX-linked payouts, repeat-failure penalties, joint reviews.</li>
+      <li><strong>Employee experience &amp; capability uplift</strong> — train on premium handling, digital tools, consultative selling, competitor response, enterprise solutions, data security, empathy.</li>
+      <li><strong>Information protection program</strong> — given Savvy's dual role: review board/investor info rights, classify sensitive data, restrict pricing/capex/churn/strategy access, formal confidentiality protocols.</li>
+      <li><strong>Agile transformation office</strong> — CEO-led; weekly execution dashboard; monthly promoter review; quarterly board review.</li>
+      <li><strong>Remove past baggage</strong> — kill loss-making products, unproductive capex, slow vendor contracts, legacy systems, duplicated teams, non-performing geographies.</li>
+    </ol>
+  </div>
+
+  <div class="card tinted-amber">
+    <h4>Out-of-the-box ideas</h4>
+    <div class="grid-2">
+      <ul>
+        <li><strong>Kill Complexity Day</strong> — monthly: remove one process, report, approval, or legacy product</li>
+        <li><strong>Customer Room</strong> — leadership listens to real complaints weekly</li>
+        <li><strong>Reverse Mentoring</strong> — young digital employees mentor senior leaders</li>
+      </ul>
+      <ul>
+        <li><strong>Partner League Table</strong> — rank partners publicly inside the company</li>
+        <li><strong>WWT War Room</strong> — top 100 customer issues reviewed daily until fixed</li>
+        <li><strong>"Confidential by default" data tagging</strong> — for Savvy-facing reports</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Timeline</h4>
+    <div class="ts-strip">
+      <div class="ts-cell t1"><strong>Days 0–30 · Align</strong>Transformation office stood up. 5 project owners appointed. Savvy info-rights review. Top 50 legacy items identified for kill list.</div>
+      <div class="ts-cell t2"><strong>Days 31–60 · Pilot</strong>Partner SLAs reviewed. Customer Room launches. First Kill Complexity Day. Reverse Mentoring cohort 1.</div>
+      <div class="ts-cell t3"><strong>Days 61–90 · Scale</strong>Partner scorecards rolled out. Information protocol approved by board. First transformation scorecard to promoters.</div>
+    </div>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Success factors</h4>
+      <ul>
+        <li>CEO is the visible transformation leader (not a delegated CTO/COO)</li>
+        <li>Weekly rhythm — no slipping to monthly</li>
+        <li>Board-approved governance for Savvy info flow</li>
+        <li>HR aligned: hire/fire authority for non-performers within 90 days</li>
+        <li>Promoter buy-in on "remove past baggage" mandate before launch</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Fallback plan</h4>
+      <ul>
+        <li>If silos resist — restructure into customer-segment-led P&amp;Ls instead of product-led BUs</li>
+        <li>If outsourcing partners cannot meet new SLAs — insource top 2 functions (premium CX, network ops in SE)</li>
+        <li>If Savvy contests info restrictions — escalate to board; consider stake repurchase</li>
+        <li>If transformation office stalls — bring in external CTO/COO for the 12-month transformation only</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>KPIs</h4>
+    <div class="kpi-row">
+      <div class="kpi"><strong>Employee engagement</strong>+20%</div>
+      <div class="kpi"><strong>Partner SLA compliance</strong>&gt; 95%</div>
+      <div class="kpi"><strong>Internal TAT</strong>−50%</div>
+      <div class="kpi"><strong>Complaint aging</strong>&lt; 3 days</div>
+      <div class="kpi"><strong>Info security incidents</strong>0 high-sev</div>
+      <div class="kpi"><strong>Processes simplified</strong>50 in year 1</div>
+      <div class="kpi"><strong>Digital tool adoption</strong>&gt; 80%</div>
+      <div class="kpi"><strong>Cross-BU sell</strong>+30%</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TAB 9: PROJECT 5 — ORBIT GROWTH ========== -->
+<section class="panel" id="t9">
+  <div class="proj-head tinted-purple">
+    <div class="num">Project 5 of 5 · Hypothalamus</div>
+    <h2>Orbit Growth</h2>
+    <div class="theme"><strong>Theme:</strong> Inorganic growth · Partnerships · Acquisitions · Ecosystem expansion</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Core idea</h4>
+      <p>Organic growth alone will not restore leadership in time. Use <strong>partnerships, selective M&amp;A, and ecosystem plays</strong> to accelerate capability and market access — without carrying all the capex.</p>
+    </div>
+    <div class="card">
+      <h4>Strategic objective</h4>
+      <p>Build growth options beyond legacy telecom through acquisitions, partnerships, cross-services, and <strong>capital-light</strong> models.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Key initiatives</h4>
+    <ol>
+      <li><strong>Strategic partnership for 5G capex</strong> — infrastructure / tower / fiber sharing, vendor financing, private network partnerships, enterprise co-investment.</li>
+      <li><strong>Acquire capabilities, not just subscribers</strong> — regional broadband ISPs in premium clusters; Wi-Fi hotspot providers; IoT startups; cloud / security MSPs; AI CX platforms; field-service tech; enterprise connectivity specialists.</li>
+      <li><strong>Cross-service partnerships</strong> — OTT, cloud, cybersecurity, payments, smart home, edtech, healthtech, enterprise SaaS.</li>
+      <li><strong>Premium ecosystem bundles</strong> — premium home digital, SME business continuity, smart office, student learning, elderly care, secure digital payments.</li>
+      <li><strong>M&amp;A screening framework</strong> — every target scored on: segment fit, premium fit, tech capability, payback, integration risk, NPS impact, cross-sell potential, strategic control.</li>
+    </ol>
+  </div>
+
+  <div class="card tinted-amber">
+    <h4>Out-of-the-box ideas</h4>
+    <div class="grid-2">
+      <ul>
+        <li><strong>WWT Digital Club</strong> — premium sub: broadband + OTT + cloud + cybersecurity + priority service + smart home</li>
+        <li><strong>Connectivity-as-a-Service for SMEs</strong> — monthly: broadband + backup + security + cloud + device support</li>
+        <li><strong>Acquire the customer front door</strong> — buy/partner with apps that already own premium relationships</li>
+      </ul>
+      <ul>
+        <li><strong>Neighborhood fiber clubs</strong> — pre-sell premium broadband to communities before capex</li>
+        <li><strong>Enterprise co-build</strong> — business parks co-invest in WWT infra for premium service</li>
+        <li><strong>Telecom-led fintech pilot</strong> — DLT-enabled low-cost payments adjacency</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Timeline</h4>
+    <div class="ts-strip">
+      <div class="ts-cell t1"><strong>Days 0–30 · Align</strong>M&amp;A screening framework built. CCDO appointed. Partnership prospect list (top 30) prepared.</div>
+      <div class="ts-cell t2"><strong>Days 31–60 · Pilot</strong>Two partnership conversations started (tower sharing + cloud). First M&amp;A target shortlisted. Premium bundle live with 1 OTT partner.</div>
+      <div class="ts-cell t3"><strong>Days 61–90 · Scale</strong>First partnership signed. M&amp;A negotiation underway. Three bundles live. Co-build pilot with one tech park.</div>
+    </div>
+  </div>
+
+  <div class="box-pair">
+    <div class="card tinted-teal">
+      <h4>Success factors</h4>
+      <ul>
+        <li>Disciplined M&amp;A — no acquisition without 24-mo synergy plan</li>
+        <li>Premium positioning is the deal-screen — refuse low-end targets</li>
+        <li>Integration team stood up <em>before</em> the first deal closes</li>
+        <li>Board approval matrix that prevents Savvy from blocking strategic deals</li>
+        <li>Capital allocation: M&amp;A budget capped, partnership-led by default</li>
+      </ul>
+    </div>
+    <div class="card tinted-coral">
+      <h4>Fallback plan</h4>
+      <ul>
+        <li>If acquisitions are too costly — pivot to JVs and revenue-share partnerships</li>
+        <li>If integration synergies miss — divest non-core acquired assets within 18 months</li>
+        <li>If 5G capex partners are not found — phase rollout with vendor financing only</li>
+        <li>If a Savvy conflict-of-interest blocks an OTT/AI deal — escalate; build neutral SPV</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>KPIs</h4>
+    <div class="kpi-row">
+      <div class="kpi"><strong>Partnership revenue</strong>$ in y1</div>
+      <div class="kpi"><strong>Ecosystem bundles live</strong>5+ in y1</div>
+      <div class="kpi"><strong>M&amp;A pipeline</strong>$ tracked</div>
+      <div class="kpi"><strong>Partner-led acquisition</strong>20% of new</div>
+      <div class="kpi"><strong>Capex avoided</strong>$ via partnerships</div>
+      <div class="kpi"><strong>Cross-sell revenue</strong>+25%</div>
+      <div class="kpi"><strong>Premium customer growth</strong>+15%</div>
+      <div class="kpi"><strong>Enterprise wins</strong>top 50 logos</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TAB 10: CLOSING ========== -->
+<section class="panel" id="t10">
+  <div class="card" style="background:linear-gradient(135deg,var(--blue-50),var(--purple-50));border:1px solid var(--border)">
+    <h2 style="font-size:22px;line-height:1.35">We are not rescuing WWT.<br>We are remembering who WWT always was.</h2>
+    <p class="small" style="margin-bottom:0">A pioneer. A first mover. A company that built undersea cables, lit up a capital, and crossed a billion dollars before most rivals had a brand. The fire is still ours to relight.</p>
+  </div>
+
+  <div class="closing-grid">
+    <div class="card tinted-purple">
+      <h4>To the Board</h4>
+      <p>WWT does not need to become someone else. It needs to become more of itself — with sharper choices, tighter capital, and the courage to refuse the wrong fights.</p>
+    </div>
+    <div class="card tinted-teal">
+      <h4>To Leadership</h4>
+      <p>Weekly cadence. Five owners. One transformation agenda. No protected projects, no protected people. Only protected customers and protected discipline.</p>
+    </div>
+    <div class="card tinted-amber">
+      <h4>To Employees</h4>
+      <p>You did not join a fixed-line company. You joined a "firsts" company. We are going to be first again — in service, in AI, in 5G, and in trust.</p>
+    </div>
+    <div class="card tinted-pink">
+      <h4>To Customers</h4>
+      <p>You may have stayed with us out of habit. From today, we will earn your loyalty out of evidence — every call, every install, every repair, every bill.</p>
+    </div>
+  </div>
+
+  <div class="quote">
+    "Markets reward agility. We were once the most agile player in Indian telecom. The next 90 days decide whether that becomes a memory — or a foundation."
+    <span class="by">— Project Hypothalamus framing</span>
+  </div>
+
+  <div class="quote" style="background:var(--teal-50);border-left-color:var(--teal-800)">
+    "We will not be the cheapest. We will be the most trusted. We will not chase every customer. We will defend every customer worth keeping. We will not invest everywhere. We will invest where it compounds."
+    <span class="by">— WWT promise to itself</span>
+  </div>
+
+  <div class="quote" style="background:var(--amber-50);border-left-color:var(--amber-800)">
+    "From the first family landline call to the first digital transaction, from grandparents staying connected to children learning online — WWT has grown with every generation. We are not just a connection. We are a relationship."
+    <span class="by">— Connected Across Generations · brand promise</span>
+  </div>
+
+  <div class="card">
+    <h3>The five projects, one line each</h3>
+    <table>
+      <tbody>
+        <tr><td><strong>WWT Stars Shine</strong></td><td>Protect and delight customers.</td></tr>
+        <tr><td><strong>Jump 5 Steps</strong></td><td>Reclaim technology leadership.</td></tr>
+        <tr><td><strong>Choose the Battle</strong></td><td>Compete selectively and intelligently.</td></tr>
+        <tr><td><strong>LightHouse WWT</strong></td><td>Rebuild internal agility and trust.</td></tr>
+        <tr><td><strong>Orbit Growth</strong></td><td>Accelerate through partnerships and acquisitions.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="background:var(--ink);color:#fff;border:0;text-align:center;padding:28px 20px">
+    <div style="font-size:11px;letter-spacing:2px;opacity:0.6;text-transform:uppercase">Project Hypothalamus</div>
+    <h2 style="color:#fff;font-size:24px;margin:8px 0">Reclaim. Restore. Rise.</h2>
+    <p class="small" style="color:rgba(255,255,255,0.7);margin:0">Lighter. Sharper. More premium. More digital. More difficult for competitors to attack.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabs.forEach(b => b.classList.toggle('active', b === btn));
+      panels.forEach(p => p.classList.toggle('active', p.id === target));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
